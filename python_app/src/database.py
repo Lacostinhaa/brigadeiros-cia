@@ -47,6 +47,36 @@ class Database:
         }])
         st.session_state.vendas = pd.concat([st.session_state.vendas, nova_venda], ignore_index=True)
 
+    def editar_compra(self, id, data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista):
+        """Edita uma compra existente"""
+        idx = st.session_state.compras.index[st.session_state.compras['id'] == id].tolist()[0]
+        st.session_state.compras.at[idx, 'data'] = data
+        st.session_state.compras.at[idx, 'produto'] = produto
+        st.session_state.compras.at[idx, 'quantidade'] = quantidade
+        st.session_state.compras.at[idx, 'valor_unitario'] = valor_unitario
+        st.session_state.compras.at[idx, 'valor_total'] = valor_total
+        st.session_state.compras.at[idx, 'observacao'] = observacao
+        st.session_state.compras.at[idx, 'compra_mista'] = compra_mista
+
+    def editar_venda(self, id, data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao):
+        """Edita uma venda existente"""
+        idx = st.session_state.vendas.index[st.session_state.vendas['id'] == id].tolist()[0]
+        st.session_state.vendas.at[idx, 'data'] = data
+        st.session_state.vendas.at[idx, 'produto'] = produto
+        st.session_state.vendas.at[idx, 'quantidade'] = quantidade
+        st.session_state.vendas.at[idx, 'preco_unitario'] = preco_unitario
+        st.session_state.vendas.at[idx, 'valor_total'] = valor_total
+        st.session_state.vendas.at[idx, 'forma_pagamento'] = forma_pagamento
+        st.session_state.vendas.at[idx, 'observacao'] = observacao
+
+    def obter_compra_por_id(self, id):
+        """Obtém uma compra pelo ID"""
+        return st.session_state.compras[st.session_state.compras['id'] == id].iloc[0]
+
+    def obter_venda_por_id(self, id):
+        """Obtém uma venda pelo ID"""
+        return st.session_state.vendas[st.session_state.vendas['id'] == id].iloc[0]
+
     def obter_total_mes(self, tabela, mes=None, ano=None):
         """Obtém o total de compras ou vendas do mês especificado"""
         if mes is None:

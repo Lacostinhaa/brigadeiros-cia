@@ -208,6 +208,12 @@ st.markdown("""
 # Inicialização do banco de dados
 db = Database()
 
+# Inicialização das variáveis de estado
+if 'editando_compra' not in st.session_state:
+    st.session_state.editando_compra = None
+if 'editando_venda' not in st.session_state:
+    st.session_state.editando_venda = None
+
 # Função para carregar dados de um arquivo
 def carregar_dados(uploaded_file):
     if uploaded_file is not None:
@@ -256,9 +262,9 @@ with st.sidebar:
             mime='text/csv'
         )
 
-# Função para formatar moeda
-def formatar_moeda(valor):
-    return f"R$ {valor:,.2f}"
+# Função para formatar valores monetários
+def formatar_moeda(value):
+    return f"R$ {value:,.2f}"
 
 # Título principal com estilo personalizado
 st.markdown('<h1 class="main-title">🧁 Brigadeiros & Cia</h1>', unsafe_allow_html=True)
@@ -295,100 +301,196 @@ with tab1:
         st.markdown('<h3 class="subtitle" style="font-size: 1.5rem;">📋 Últimas Compras</h3>', unsafe_allow_html=True)
         ultimas_compras = db.obter_ultimos_registros('compras')
         if not ultimas_compras.empty:
-            st.dataframe(
-                ultimas_compras[['data', 'produto', 'quantidade', 'valor_total']],
-                hide_index=True,
-                use_container_width=True
+            # Adiciona coluna de ações
+            ultimas_compras['ações'] = ultimas_compras.apply(
+                lambda x: st.button('✏️ Editar', key=f'edit_compra_{x.id}', on_click=lambda id=x.id: setattr(st.session_state, 'editando_compra', id)),
+                axis=1
             )
+            st.dataframe(ultimas_compras[['data', 'produto', 'quantidade', 'valor_total', 'ações']])
     
     with col2:
         st.markdown('<h3 class="subtitle" style="font-size: 1.5rem;">📋 Últimas Vendas</h3>', unsafe_allow_html=True)
         ultimas_vendas = db.obter_ultimos_registros('vendas')
         if not ultimas_vendas.empty:
-            st.dataframe(
-                ultimas_vendas[['data', 'produto', 'quantidade', 'valor_total']],
-                hide_index=True,
-                use_container_width=True
+            # Adiciona coluna de ações
+            ultimas_vendas['ações'] = ultimas_vendas.apply(
+                lambda x: st.button('✏️ Editar', key=f'edit_venda_{x.id}', on_click=lambda id=x.id: setattr(st.session_state, 'editando_venda', id)),
+                axis=1
             )
+            st.dataframe(ultimas_vendas[['data', 'produto', 'quantidade', 'valor_total', 'ações']])
 
 # Aba Compras
 with tab2:
     st.markdown('<h2 class="subtitle">Registro de Compras</h2>', unsafe_allow_html=True)
     
-    with st.form("form_compras"):
-        col1, col2 = st.columns(2)
+    # Se estiver editando uma compra
+    if st.session_state.editando_compra is not None:
+        compra = db.obter_compra_por_id(st.session_state.editando_compra)
+        st.subheader("✏️ Editando Compra")
         
-        with col1:
-            data_compra = st.date_input("📅 Data da Compra", datetime.now())
-            produto = st.text_input("🏷️ Produto Comprado")
-            quantidade = st.number_input("📦 Quantidade", min_value=0.0, step=0.1)
-        
-        with col2:
-            valor_unitario = st.number_input("💲 Valor Unitário (CLP)", min_value=0)
-            compra_mista = st.checkbox("🛒 Compra Mista (mercado de casa junto)")
-            observacao = st.text_area("📝 Observação", height=100)
-        
-        valor_total = quantidade * valor_unitario
-        st.markdown(f'<p class="valor-total">Valor Total: {formatar_moeda(valor_total)}</p>', unsafe_allow_html=True)
-        
-        submitted = st.form_submit_button("💾 Registrar Compra")
-        
-        if submitted:
-            if produto and quantidade > 0 and valor_unitario > 0:
-                db.adicionar_compra(
-                    data_compra,
-                    produto,
-                    quantidade,
-                    valor_unitario,
-                    valor_total,
-                    observacao,
-                    compra_mista
-                )
-                st.success("✅ Compra registrada com sucesso!")
-                st.rerun()
-            else:
-                st.error("❌ Por favor, preencha todos os campos obrigatórios.")
+        with st.form("form_editar_compra"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                data_compra = st.date_input("Data da Compra", value=pd.to_datetime(compra['data']).date())
+                produto = st.text_input("Produto Comprado", value=compra['produto'])
+                quantidade = st.number_input("Quantidade", min_value=0.0, step=0.1, value=float(compra['quantidade']))
+            
+            with col2:
+                valor_unitario = st.number_input("Valor Unitário (CLP)", min_value=0, value=int(compra['valor_unitario']))
+                compra_mista = st.checkbox("Compra Mista", value=compra['compra_mista'])
+                observacao = st.text_area("Observação", value=compra['observacao'], height=100)
+            
+            valor_total = quantidade * valor_unitario
+            st.markdown(f'<p class="valor-total">Valor Total: {formatar_moeda(valor_total)}</p>', unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.form_submit_button("💾 Salvar Alterações"):
+                    db.editar_compra(
+                        st.session_state.editando_compra,
+                        data_compra,
+                        produto,
+                        quantidade,
+                        valor_unitario,
+                        valor_total,
+                        observacao,
+                        compra_mista
+                    )
+                    st.session_state.editando_compra = None
+                    st.success("✅ Compra atualizada com sucesso!")
+                    st.rerun()
+            
+            with col2:
+                if st.form_submit_button("❌ Cancelar Edição"):
+                    st.session_state.editando_compra = None
+                    st.rerun()
+    
+    # Se não estiver editando, mostra o formulário normal de compras
+    else:
+        with st.form("form_compras"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                data_compra = st.date_input("📅 Data da Compra", datetime.now())
+                produto = st.text_input("🏷️ Produto Comprado")
+                quantidade = st.number_input("📦 Quantidade", min_value=0.0, step=0.1)
+            
+            with col2:
+                valor_unitario = st.number_input("💲 Valor Unitário (CLP)", min_value=0)
+                compra_mista = st.checkbox("🛒 Compra Mista (mercado de casa junto)")
+                observacao = st.text_area("📝 Observação", height=100)
+            
+            valor_total = quantidade * valor_unitario
+            st.markdown(f'<p class="valor-total">Valor Total: {formatar_moeda(valor_total)}</p>', unsafe_allow_html=True)
+            
+            submitted = st.form_submit_button("💾 Registrar Compra")
+            
+            if submitted:
+                if produto and quantidade > 0 and valor_unitario > 0:
+                    db.adicionar_compra(
+                        data_compra,
+                        produto,
+                        quantidade,
+                        valor_unitario,
+                        valor_total,
+                        observacao,
+                        compra_mista
+                    )
+                    st.success("✅ Compra registrada com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("❌ Por favor, preencha todos os campos obrigatórios.")
 
 # Aba Vendas
 with tab3:
     st.markdown('<h2 class="subtitle">Registro de Vendas</h2>', unsafe_allow_html=True)
     
-    with st.form("form_vendas"):
-        col1, col2 = st.columns(2)
+    # Se estiver editando uma venda
+    if st.session_state.editando_venda is not None:
+        venda = db.obter_venda_por_id(st.session_state.editando_venda)
+        st.subheader("✏️ Editando Venda")
         
-        with col1:
-            data_venda = st.date_input("📅 Data da Venda", datetime.now())
-            produto = st.text_input("🧁 Produto Vendido")
-            quantidade = st.number_input("📦 Quantidade", min_value=1, step=1)
-        
-        with col2:
-            preco_unitario = st.number_input("💲 Preço Unitário (CLP)", min_value=0)
-            forma_pagamento = st.selectbox(
-                "💳 Forma de Pagamento",
-                ["Dinheiro", "PIX", "Transferência", "Outro"]
-            )
-            observacao = st.text_area("📝 Observação", height=100)
-        
-        valor_total = quantidade * preco_unitario
-        st.markdown(f'<p class="valor-total">Valor Total: {formatar_moeda(valor_total)}</p>', unsafe_allow_html=True)
-        
-        submitted = st.form_submit_button("💾 Registrar Venda")
-        
-        if submitted:
-            if produto and quantidade > 0 and preco_unitario > 0:
-                db.adicionar_venda(
-                    data_venda,
-                    produto,
-                    quantidade,
-                    preco_unitario,
-                    valor_total,
-                    forma_pagamento,
-                    observacao
+        with st.form("form_editar_venda"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                data_venda = st.date_input("Data da Venda", value=pd.to_datetime(venda['data']).date())
+                produto = st.text_input("Produto Vendido", value=venda['produto'])
+                quantidade = st.number_input("Quantidade", min_value=1, step=1, value=int(venda['quantidade']))
+            
+            with col2:
+                preco_unitario = st.number_input("Preço Unitário (CLP)", min_value=0, value=int(venda['preco_unitario']))
+                forma_pagamento = st.selectbox(
+                    "Forma de Pagamento",
+                    ["Dinheiro", "PIX", "Transferência", "Outro"],
+                    index=["Dinheiro", "PIX", "Transferência", "Outro"].index(venda['forma_pagamento'])
                 )
-                st.success("✅ Venda registrada com sucesso!")
-                st.rerun()
-            else:
-                st.error("❌ Por favor, preencha todos os campos obrigatórios.")
+                observacao = st.text_area("Observação", value=venda['observacao'], height=100)
+            
+            valor_total = quantidade * preco_unitario
+            st.markdown(f'<p class="valor-total">Valor Total: {formatar_moeda(valor_total)}</p>', unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.form_submit_button("💾 Salvar Alterações"):
+                    db.editar_venda(
+                        st.session_state.editando_venda,
+                        data_venda,
+                        produto,
+                        quantidade,
+                        preco_unitario,
+                        valor_total,
+                        forma_pagamento,
+                        observacao
+                    )
+                    st.session_state.editando_venda = None
+                    st.success("✅ Venda atualizada com sucesso!")
+                    st.rerun()
+            
+            with col2:
+                if st.form_submit_button("❌ Cancelar Edição"):
+                    st.session_state.editando_venda = None
+                    st.rerun()
+    
+    # Se não estiver editando, mostra o formulário normal de vendas
+    else:
+        with st.form("form_vendas"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                data_venda = st.date_input("📅 Data da Venda", datetime.now())
+                produto = st.text_input("🧁 Produto Vendido")
+                quantidade = st.number_input("📦 Quantidade", min_value=1, step=1)
+            
+            with col2:
+                preco_unitario = st.number_input("💲 Preço Unitário (CLP)", min_value=0)
+                forma_pagamento = st.selectbox(
+                    "💳 Forma de Pagamento",
+                    ["Dinheiro", "PIX", "Transferência", "Outro"]
+                )
+                observacao = st.text_area("📝 Observação", height=100)
+            
+            valor_total = quantidade * preco_unitario
+            st.markdown(f'<p class="valor-total">Valor Total: {formatar_moeda(valor_total)}</p>', unsafe_allow_html=True)
+            
+            submitted = st.form_submit_button("💾 Registrar Venda")
+            
+            if submitted:
+                if produto and quantidade > 0 and preco_unitario > 0:
+                    db.adicionar_venda(
+                        data_venda,
+                        produto,
+                        quantidade,
+                        preco_unitario,
+                        valor_total,
+                        forma_pagamento,
+                        observacao
+                    )
+                    st.success("✅ Venda registrada com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("❌ Por favor, preencha todos os campos obrigatórios.")
 
 # Sidebar para exportação de relatórios
 with st.sidebar:
