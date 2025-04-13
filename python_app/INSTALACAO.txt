@@ -1,0 +1,33 @@
+GUIA DE INSTALAÇÃO - BRIGADEIROS & CIA
+
+1. Primeiro, instale o Python:
+   - Acesse: https://www.python.org/downloads/
+   - Clique em "Download Python" (baixe a versão mais recente)
+   - IMPORTANTE: Na instalação, marque a caixa "Add Python to PATH"
+
+2. Baixe os arquivos do programa:
+   - Copie a pasta "python_app" para o computador
+   - Sugestão: Copie para a Área de Trabalho
+
+3. Instale as dependências:
+   - Abra o Terminal (Prompt de Comando):
+     * Aperte a tecla Windows + R
+     * Digite "cmd" e aperte Enter
+   - Digite os comandos:
+     cd "Área de Trabalho\python_app"
+     pip install streamlit pandas plotly openpyxl python-dotenv
+
+4. Execute o programa:
+   - No mesmo Terminal, digite:
+     streamlit run src/main.py
+
+5. Pronto! O programa abrirá no navegador automaticamente.
+
+Para abrir novamente depois:
+- Basta repetir o passo 4
+- Ou crie um atalho no Desktop com o comando completo
+
+Observações:
+- O banco de dados será criado automaticamente
+- Todos os dados ficam salvos no computador
+- Os relatórios serão salvos na mesma pasta do programa 
