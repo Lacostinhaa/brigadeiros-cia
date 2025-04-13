@@ -478,17 +478,77 @@ with tab3:
 
 # Sidebar para exportação de relatórios
 with st.sidebar:
-    st.header("Exportar Relatórios")
-    mes = st.selectbox("Mês", range(1, 13), datetime.now().month - 1)
-    ano = st.number_input("Ano", min_value=2020, max_value=2030, value=datetime.now().year)
-    formato = st.selectbox("Formato", ["csv", "excel"])
+    st.markdown('<h2 class="subtitle">📊 Exportar Relatórios</h2>', unsafe_allow_html=True)
     
-    if st.button("Exportar Relatório"):
+    # Seleção do período
+    col1, col2 = st.columns(2)
+    with col1:
+        mes = st.selectbox("Mês", 
+            options=range(1, 13),
+            format_func=lambda x: ['Janeiro', 'Fevereiro', 'Março', 'Abril',
+                                 'Maio', 'Junho', 'Julho', 'Agosto',
+                                 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][x-1],
+            index=datetime.now().month - 1
+        )
+    with col2:
+        ano = st.number_input("Ano", 
+            min_value=2020,
+            max_value=2030,
+            value=datetime.now().year
+        )
+    
+    # Seleção do formato
+    formato = st.radio(
+        "Formato do Relatório",
+        options=["excel", "csv"],
+        format_func=lambda x: "Excel (XLSX)" if x == "excel" else "CSV",
+        horizontal=True
+    )
+    
+    st.markdown("---")
+    
+    # Botão de exportação com estilo
+    if st.button("📥 Baixar Relatório", type="primary", use_container_width=True):
         try:
-            compras_file, vendas_file = db.exportar_relatorio_mensal(mes, ano, formato)
-            st.success(f"✅ Relatórios exportados com sucesso!\nArquivos gerados:\n- {compras_file}\n- {vendas_file}")
+            with st.spinner("Gerando relatório..."):
+                if formato == "excel":
+                    filename = db.exportar_relatorio_mensal(mes, ano, formato)
+                    with open(filename, 'rb') as f:
+                        bytes_data = f.read()
+                    st.download_button(
+                        label="📥 Clique para baixar o relatório",
+                        data=bytes_data,
+                        file_name=filename,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+                else:
+                    compras_file, vendas_file = db.exportar_relatorio_mensal(mes, ano, formato)
+                    
+                    # Botão para baixar relatório de compras
+                    with open(compras_file, 'rb') as f:
+                        st.download_button(
+                            label="📥 Baixar Relatório de Compras",
+                            data=f.read(),
+                            file_name=compras_file,
+                            mime="text/csv",
+                            use_container_width=True
+                        )
+                    
+                    # Botão para baixar relatório de vendas
+                    with open(vendas_file, 'rb') as f:
+                        st.download_button(
+                            label="📥 Baixar Relatório de Vendas",
+                            data=f.read(),
+                            file_name=vendas_file,
+                            mime="text/csv",
+                            use_container_width=True
+                        )
+            
+            st.success("✅ Relatório gerado com sucesso!")
+            
         except Exception as e:
-            st.error(f"❌ Erro ao exportar relatórios: {str(e)}")
+            st.error(f"❌ Erro ao gerar relatório: {str(e)}")
 
 # Visualizações
 if not st.session_state.get('vendas', pd.DataFrame()).empty:

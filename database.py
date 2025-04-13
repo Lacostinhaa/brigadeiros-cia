@@ -105,41 +105,92 @@ class Database:
         conn.close()
         return df
     
-    def exportar_relatorio_mensal(self, mes, ano, formato='csv'):
-        """Exporta relatório mensal em CSV ou Excel"""
+    def exportar_relatorio_mensal(self, mes, ano, formato='excel'):
+        """Exporta relatório mensal em Excel com formatação"""
         conn = self.get_connection()
         
         # Obtém dados do mês especificado
         compras_query = f"""
-            SELECT * FROM compras 
+            SELECT 
+                strftime('%d/%m/%Y', data) as Data,
+                produto as Produto,
+                quantidade as Quantidade,
+                valor_unitario as 'Valor Unitário',
+                valor_total as 'Valor Total',
+                CASE WHEN compra_mista = 1 THEN 'Sim' ELSE 'Não' END as 'Compra Mista',
+                observacao as Observação
+            FROM compras 
             WHERE strftime('%m', data) = '{mes:02d}'
             AND strftime('%Y', data) = '{ano}'
+            ORDER BY data
         """
         
         vendas_query = f"""
-            SELECT * FROM vendas 
+            SELECT 
+                strftime('%d/%m/%Y', data) as Data,
+                produto as Produto,
+                quantidade as Quantidade,
+                preco_unitario as 'Preço Unitário',
+                valor_total as 'Valor Total',
+                forma_pagamento as 'Forma de Pagamento',
+                observacao as Observação
+            FROM vendas 
             WHERE strftime('%m', data) = '{mes:02d}'
             AND strftime('%Y', data) = '{ano}'
+            ORDER BY data
         """
         
         df_compras = pd.read_sql_query(compras_query, conn)
         df_vendas = pd.read_sql_query(vendas_query, conn)
         
         conn.close()
+
+        # Adiciona totais
+        total_compras = df_compras['Valor Total'].sum()
+        total_vendas = df_vendas['Valor Total'].sum()
         
         # Cria nome dos arquivos
-        compras_file = f'relatorio_compras_{ano}_{mes:02d}.{formato}'
-        vendas_file = f'relatorio_vendas_{ano}_{mes:02d}.{formato}'
+        nome_mes = {
+            1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+            5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+            9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+        }
         
-        # Exporta os arquivos
-        if formato == 'csv':
+        base_filename = f'Relatorio_{nome_mes[mes]}_{ano}'
+        
+        if formato == 'excel':
+            # Cria um arquivo Excel com duas abas
+            filename = f'{base_filename}.xlsx'
+            with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+                # Aba de Compras
+                df_compras.to_excel(writer, sheet_name='Compras', index=False)
+                workbook = writer.book
+                worksheet = writer.sheets['Compras']
+                
+                # Adiciona o total de compras
+                row_total = len(df_compras) + 2
+                worksheet[f'D{row_total}'] = 'Total de Compras:'
+                worksheet[f'E{row_total}'] = total_compras
+                
+                # Aba de Vendas
+                df_vendas.to_excel(writer, sheet_name='Vendas', index=False)
+                worksheet = writer.sheets['Vendas']
+                
+                # Adiciona o total de vendas
+                row_total = len(df_vendas) + 2
+                worksheet[f'D{row_total}'] = 'Total de Vendas:'
+                worksheet[f'E{row_total}'] = total_vendas
+                
+            return filename
+        else:  # csv
+            # Para CSV, cria dois arquivos separados
+            compras_file = f'{base_filename}_Compras.csv'
+            vendas_file = f'{base_filename}_Vendas.csv'
+            
             df_compras.to_csv(compras_file, index=False)
             df_vendas.to_csv(vendas_file, index=False)
-        else:  # excel
-            df_compras.to_excel(compras_file, index=False)
-            df_vendas.to_excel(vendas_file, index=False)
-        
-        return compras_file, vendas_file
+            
+            return compras_file, vendas_file
 
     def excluir_registro(self, tabela, id):
         """Exclui um registro específico da tabela"""
