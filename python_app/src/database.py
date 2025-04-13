@@ -4,51 +4,50 @@ from datetime import datetime
 
 class Database:
     def __init__(self):
-        self.db_name = 'brigadeiros.db'
-        self.init_database()
-
+        """Inicializa a conexão com o banco de dados e cria as tabelas se não existirem"""
+        self.db_file = 'brigadeiros.db'
+        self.create_tables()
+    
     def get_connection(self):
-        """Estabelece conexão com o banco de dados"""
-        return sqlite3.connect(self.db_name)
-
-    def init_database(self):
-        """Inicializa o banco de dados com as tabelas necessárias"""
+        """Retorna uma conexão com o banco de dados"""
+        return sqlite3.connect(self.db_file)
+    
+    def create_tables(self):
+        """Cria as tabelas necessárias se não existirem"""
         conn = self.get_connection()
         cursor = conn.cursor()
-
-        # Criação da tabela de compras
+        
+        # Tabela de compras
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS compras (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 data DATE NOT NULL,
                 produto TEXT NOT NULL,
                 quantidade REAL NOT NULL,
-                valor_unitario REAL NOT NULL,
-                valor_total REAL NOT NULL,
+                valor_unitario INTEGER NOT NULL,
+                valor_total INTEGER NOT NULL,
                 observacao TEXT,
-                compra_mista BOOLEAN NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                compra_mista BOOLEAN NOT NULL DEFAULT 0
             )
         ''')
-
-        # Criação da tabela de vendas
+        
+        # Tabela de vendas
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS vendas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 data DATE NOT NULL,
                 produto TEXT NOT NULL,
                 quantidade INTEGER NOT NULL,
-                preco_unitario REAL NOT NULL,
-                valor_total REAL NOT NULL,
+                preco_unitario INTEGER NOT NULL,
+                valor_total INTEGER NOT NULL,
                 forma_pagamento TEXT NOT NULL,
-                observacao TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                observacao TEXT
             )
         ''')
-
+        
         conn.commit()
         conn.close()
-
+    
     def adicionar_compra(self, data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista):
         """Adiciona uma nova compra ao banco de dados"""
         conn = self.get_connection()
@@ -61,7 +60,7 @@ class Database:
         
         conn.commit()
         conn.close()
-
+    
     def adicionar_venda(self, data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao):
         """Adiciona uma nova venda ao banco de dados"""
         conn = self.get_connection()
@@ -74,67 +73,7 @@ class Database:
         
         conn.commit()
         conn.close()
-
-    def editar_compra(self, id, data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista):
-        """Edita uma compra existente"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            UPDATE compras 
-            SET data = ?, produto = ?, quantidade = ?, valor_unitario = ?, 
-                valor_total = ?, observacao = ?, compra_mista = ?
-            WHERE id = ?
-        ''', (data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista, id))
-        
-        conn.commit()
-        conn.close()
-
-    def editar_venda(self, id, data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao):
-        """Edita uma venda existente"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            UPDATE vendas 
-            SET data = ?, produto = ?, quantidade = ?, preco_unitario = ?, 
-                valor_total = ?, forma_pagamento = ?, observacao = ?
-            WHERE id = ?
-        ''', (data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao, id))
-        
-        conn.commit()
-        conn.close()
-
-    def obter_compra_por_id(self, id):
-        """Obtém uma compra pelo ID"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT * FROM compras WHERE id = ?', (id,))
-        columns = [description[0] for description in cursor.description]
-        row = cursor.fetchone()
-        
-        conn.close()
-        
-        if row:
-            return dict(zip(columns, row))
-        return None
-
-    def obter_venda_por_id(self, id):
-        """Obtém uma venda pelo ID"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT * FROM vendas WHERE id = ?', (id,))
-        columns = [description[0] for description in cursor.description]
-        row = cursor.fetchone()
-        
-        conn.close()
-        
-        if row:
-            return dict(zip(columns, row))
-        return None
-
+    
     def obter_total_mes(self, tabela, mes=None, ano=None):
         """Obtém o total de compras ou vendas do mês especificado"""
         if mes is None:
@@ -157,7 +96,7 @@ class Database:
         
         conn.close()
         return total
-
+    
     def obter_ultimos_registros(self, tabela, limite=5):
         """Obtém os últimos registros de uma tabela específica"""
         conn = self.get_connection()
@@ -165,7 +104,7 @@ class Database:
         df = pd.read_sql_query(query, conn)
         conn.close()
         return df
-
+    
     def exportar_relatorio_mensal(self, mes, ano, formato='csv'):
         """Exporta relatório mensal em CSV ou Excel"""
         conn = self.get_connection()
@@ -200,4 +139,59 @@ class Database:
             df_compras.to_excel(compras_file, index=False)
             df_vendas.to_excel(vendas_file, index=False)
         
-        return compras_file, vendas_file 
+        return compras_file, vendas_file
+
+    def excluir_registro(self, tabela, id):
+        """Exclui um registro específico da tabela"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(f'DELETE FROM {tabela} WHERE id = ?', (id,))
+        
+        conn.commit()
+        conn.close()
+    
+    def obter_registro(self, tabela, id):
+        """Obtém um registro específico da tabela"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(f'SELECT * FROM {tabela} WHERE id = ?', (id,))
+        registro = cursor.fetchone()
+        
+        conn.close()
+        
+        if registro:
+            colunas = [description[0] for description in cursor.description]
+            return dict(zip(colunas, registro))
+        return None
+    
+    def editar_compra(self, id, data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista):
+        """Edita uma compra existente"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE compras 
+            SET data = ?, produto = ?, quantidade = ?, valor_unitario = ?, 
+                valor_total = ?, observacao = ?, compra_mista = ?
+            WHERE id = ?
+        ''', (data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista, id))
+        
+        conn.commit()
+        conn.close()
+    
+    def editar_venda(self, id, data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao):
+        """Edita uma venda existente"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE vendas 
+            SET data = ?, produto = ?, quantidade = ?, preco_unitario = ?, 
+                valor_total = ?, forma_pagamento = ?, observacao = ?
+            WHERE id = ?
+        ''', (data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao, id))
+        
+        conn.commit()
+        conn.close() 
