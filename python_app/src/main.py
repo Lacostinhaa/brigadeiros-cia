@@ -197,6 +197,78 @@ st.markdown("""
         border-radius: 8px;
         font-weight: 500;
     }
+
+    /* Estilo para os containers de registros */
+    .registro-container {
+        background-color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    /* Estilo para o botão de editar */
+    .edit-button {
+        background-color: var(--cor-vinho);
+        color: white;
+        border: none;
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .edit-button:hover {
+        background-color: var(--cor-destaque);
+        transform: translateY(-1px);
+    }
+
+    /* Estilo para os valores nos registros */
+    .valor-registro {
+        font-family: 'Roboto Mono', monospace;
+        color: var(--cor-vinho);
+        font-weight: 500;
+    }
+
+    .data-registro {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .produto-registro {
+        color: var(--cor-texto);
+        font-weight: 500;
+    }
+
+    .quantidade-registro {
+        color: var(--cor-destaque);
+        font-weight: 500;
+    }
+
+    /* Estilo para as métricas */
+    .metric-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .metric-value {
+        font-size: 1.8rem;
+        color: var(--cor-vinho);
+        font-weight: bold;
+        margin: 0.5rem 0;
+    }
+
+    .metric-label {
+        font-size: 1rem;
+        color: var(--cor-texto);
+        opacity: 0.8;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -297,44 +369,52 @@ with tab1:
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Últimas Compras")
+        st.markdown('<h3 class="subtitle" style="font-size: 1.5rem;">📋 Últimas Compras</h3>', unsafe_allow_html=True)
         ultimas_compras = db.obter_ultimos_registros('compras')
         if not ultimas_compras.empty:
             for idx, compra in ultimas_compras.iterrows():
-                with st.container():
-                    col_data, col_prod, col_qtd, col_valor, col_edit = st.columns([2, 2, 1, 2, 1])
-                    with col_data:
-                        st.write(compra['data'])
-                    with col_prod:
-                        st.write(compra['produto'])
-                    with col_qtd:
-                        st.write(compra['quantidade'])
-                    with col_valor:
-                        st.write(formatar_moeda(compra['valor_total']))
-                    with col_edit:
-                        if st.button('✏️', key=f'edit_compra_{compra["id"]}'):
-                            st.session_state.editando_compra = compra['id']
-                            st.rerun()
+                st.markdown(f"""
+                <div class="registro-container">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="data-registro">{compra['data']}</span><br>
+                            <span class="produto-registro">{compra['produto']}</span><br>
+                            <span class="quantidade-registro">Qtd: {compra['quantidade']}</span>
+                            <span class="valor-registro">{formatar_moeda(compra['valor_total'])}</span>
+                        </div>
+                        <button class="edit-button" onclick="editar_compra_{compra['id']}()">✏️</button>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Botão invisível que será acionado pelo JavaScript
+                if st.button('✏️', key=f'edit_compra_{compra["id"]}', help="Editar compra"):
+                    st.session_state.editando_compra = compra['id']
+                    st.rerun()
     
     with col2:
-        st.subheader("Últimas Vendas")
+        st.markdown('<h3 class="subtitle" style="font-size: 1.5rem;">📋 Últimas Vendas</h3>', unsafe_allow_html=True)
         ultimas_vendas = db.obter_ultimos_registros('vendas')
         if not ultimas_vendas.empty:
             for idx, venda in ultimas_vendas.iterrows():
-                with st.container():
-                    col_data, col_prod, col_qtd, col_valor, col_edit = st.columns([2, 2, 1, 2, 1])
-                    with col_data:
-                        st.write(venda['data'])
-                    with col_prod:
-                        st.write(venda['produto'])
-                    with col_qtd:
-                        st.write(venda['quantidade'])
-                    with col_valor:
-                        st.write(formatar_moeda(venda['valor_total']))
-                    with col_edit:
-                        if st.button('✏️', key=f'edit_venda_{venda["id"]}'):
-                            st.session_state.editando_venda = venda['id']
-                            st.rerun()
+                st.markdown(f"""
+                <div class="registro-container">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="data-registro">{venda['data']}</span><br>
+                            <span class="produto-registro">{venda['produto']}</span><br>
+                            <span class="quantidade-registro">Qtd: {venda['quantidade']}</span>
+                            <span class="valor-registro">{formatar_moeda(venda['valor_total'])}</span>
+                        </div>
+                        <button class="edit-button" onclick="editar_venda_{venda['id']}()">✏️</button>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Botão invisível que será acionado pelo JavaScript
+                if st.button('✏️', key=f'edit_venda_{venda["id"]}', help="Editar venda"):
+                    st.session_state.editando_venda = venda['id']
+                    st.rerun()
 
 # Aba Compras
 with tab2:
