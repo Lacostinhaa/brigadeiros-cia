@@ -213,11 +213,16 @@ st.markdown("""
         background-color: var(--cor-vinho);
         color: white;
         border: none;
-        padding: 0.3rem 0.6rem;
+        padding: 0.15rem 0.3rem;
         border-radius: 4px;
-        font-size: 0.8rem;
+        font-size: 0.6rem;
         cursor: pointer;
         transition: all 0.3s ease;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .edit-button:hover {
