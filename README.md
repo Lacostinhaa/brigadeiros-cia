@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Brigadeiros & Cia - Sistema de Controle Financeiro 🧁
 
-## Getting Started
+Sistema de gerenciamento financeiro desenvolvido para controle de vendas e compras de brigadeiros e outros doces.
 
-First, run the development server:
+## Funcionalidades 📊
 
+- Dashboard com métricas de vendas e compras
+- Registro de vendas com detalhes do produto e forma de pagamento
+- Controle de compras de insumos
+- Relatórios mensais exportáveis
+- Interface moderna e intuitiva
+
+## Requisitos 📋
+
+- Python 3.8 ou superior
+- Bibliotecas necessárias listadas em `requirements.txt`
+
+## Como Instalar 🚀
+
+1. Clone o repositório
+2. Instale as dependências:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pip install -r requirements.txt
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Como Executar 💻
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Navegue até a pasta do projeto:
+```bash
+cd python_app/src
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Execute o aplicativo:
+```bash
+streamlit run main.py
+```
 
-## Learn More
+3. Acesse o sistema no navegador através do endereço: http://localhost:8501
 
-To learn more about Next.js, take a look at the following resources:
+## Estrutura do Projeto 📁
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `python_app/src/` - Código fonte principal
+  - `main.py` - Aplicativo Streamlit principal
+  - `database.py` - Gerenciamento do banco de dados
+- `requirements.txt` - Dependências do projeto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Funcionalidades Principais 🎯
 
-## Deploy on Vercel
+- **Dashboard**: Visualização rápida de métricas importantes
+- **Registro de Vendas**: Controle detalhado das vendas realizadas
+- **Controle de Compras**: Gestão de insumos e gastos
+- **Relatórios**: Exportação de dados em diferentes formatos
+- **Banco de Dados**: Armazenamento seguro e persistente das informações
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🎨 Interface
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Interface web local via Streamlit
+- Design responsivo e amigável
+- Cores e estilos personalizados
+- Ícones intuitivos
+
+## 🔧 Tecnologias
+
+- Python 3.8+
+- Streamlit
+- SQLite
+- Pandas
+- Plotly
+
+## 📊 Banco de Dados
+
+- SQLite local (brigadeiros.db)
+- Tabelas:
+  - compras
+  - vendas
+
+## 🤝 Contribuições
+
+Contribuições são bem-vindas! Sinta-se à vontade para:
+- Reportar bugs
+- Sugerir melhorias
+- Enviar pull requests
+
+## 📝 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes. 
