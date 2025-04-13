@@ -378,48 +378,42 @@ with tab1:
         ultimas_compras = db.obter_ultimos_registros('compras')
         if not ultimas_compras.empty:
             for idx, compra in ultimas_compras.iterrows():
-                st.markdown(f"""
-                <div class="registro-container">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
+                with st.container():
+                    col_info, col_edit = st.columns([5, 1])
+                    with col_info:
+                        st.markdown(f"""
+                        <div class="registro-container">
                             <span class="data-registro">{compra['data']}</span><br>
                             <span class="produto-registro">{compra['produto']}</span><br>
                             <span class="quantidade-registro">Qtd: {compra['quantidade']}</span>
                             <span class="valor-registro">{formatar_moeda(compra['valor_total'])}</span>
                         </div>
-                        <button class="edit-button" onclick="editar_compra_{compra['id']}()">✏️</button>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Botão invisível que será acionado pelo JavaScript
-                if st.button('✏️', key=f'edit_compra_{compra["id"]}', help="Editar compra"):
-                    st.session_state.editando_compra = compra['id']
-                    st.rerun()
+                        """, unsafe_allow_html=True)
+                    with col_edit:
+                        if st.button('✏️', key=f'edit_compra_{compra["id"]}', help="Editar compra"):
+                            st.session_state.editando_compra = compra['id']
+                            st.rerun()
     
     with col2:
         st.markdown('<h3 class="subtitle" style="font-size: 1.5rem;">📋 Últimas Vendas</h3>', unsafe_allow_html=True)
         ultimas_vendas = db.obter_ultimos_registros('vendas')
         if not ultimas_vendas.empty:
             for idx, venda in ultimas_vendas.iterrows():
-                st.markdown(f"""
-                <div class="registro-container">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
+                with st.container():
+                    col_info, col_edit = st.columns([5, 1])
+                    with col_info:
+                        st.markdown(f"""
+                        <div class="registro-container">
                             <span class="data-registro">{venda['data']}</span><br>
                             <span class="produto-registro">{venda['produto']}</span><br>
                             <span class="quantidade-registro">Qtd: {venda['quantidade']}</span>
                             <span class="valor-registro">{formatar_moeda(venda['valor_total'])}</span>
                         </div>
-                        <button class="edit-button" onclick="editar_venda_{venda['id']}()">✏️</button>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Botão invisível que será acionado pelo JavaScript
-                if st.button('✏️', key=f'edit_venda_{venda["id"]}', help="Editar venda"):
-                    st.session_state.editando_venda = venda['id']
-                    st.rerun()
+                        """, unsafe_allow_html=True)
+                    with col_edit:
+                        if st.button('✏️', key=f'edit_venda_{venda["id"]}', help="Editar venda"):
+                            st.session_state.editando_venda = venda['id']
+                            st.rerun()
 
 # Aba Compras
 with tab2:
