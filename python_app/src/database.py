@@ -1,81 +1,139 @@
-import streamlit as st
-from datetime import datetime
+import sqlite3
 import pandas as pd
+from datetime import datetime
 
 class Database:
     def __init__(self):
-        # Inicializa as tabelas no session_state se não existirem
-        if 'compras' not in st.session_state:
-            st.session_state.compras = pd.DataFrame(columns=[
-                'id', 'data', 'produto', 'quantidade', 'valor_unitario',
-                'valor_total', 'observacao', 'compra_mista', 'created_at'
-            ])
-        
-        if 'vendas' not in st.session_state:
-            st.session_state.vendas = pd.DataFrame(columns=[
-                'id', 'data', 'produto', 'quantidade', 'preco_unitario',
-                'valor_total', 'forma_pagamento', 'observacao', 'created_at'
-            ])
+        self.db_name = 'brigadeiros.db'
+        self.init_database()
+
+    def get_connection(self):
+        """Estabelece conexão com o banco de dados"""
+        return sqlite3.connect(self.db_name)
+
+    def init_database(self):
+        """Inicializa o banco de dados com as tabelas necessárias"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        # Criação da tabela de compras
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS compras (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                data DATE NOT NULL,
+                produto TEXT NOT NULL,
+                quantidade REAL NOT NULL,
+                valor_unitario REAL NOT NULL,
+                valor_total REAL NOT NULL,
+                observacao TEXT,
+                compra_mista BOOLEAN NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # Criação da tabela de vendas
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS vendas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                data DATE NOT NULL,
+                produto TEXT NOT NULL,
+                quantidade INTEGER NOT NULL,
+                preco_unitario REAL NOT NULL,
+                valor_total REAL NOT NULL,
+                forma_pagamento TEXT NOT NULL,
+                observacao TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        conn.commit()
+        conn.close()
 
     def adicionar_compra(self, data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista):
-        """Adiciona uma nova compra"""
-        nova_compra = pd.DataFrame([{
-            'id': len(st.session_state.compras) + 1,
-            'data': data,
-            'produto': produto,
-            'quantidade': quantidade,
-            'valor_unitario': valor_unitario,
-            'valor_total': valor_total,
-            'observacao': observacao,
-            'compra_mista': compra_mista,
-            'created_at': datetime.now()
-        }])
-        st.session_state.compras = pd.concat([st.session_state.compras, nova_compra], ignore_index=True)
+        """Adiciona uma nova compra ao banco de dados"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO compras (data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista))
+        
+        conn.commit()
+        conn.close()
 
     def adicionar_venda(self, data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao):
-        """Adiciona uma nova venda"""
-        nova_venda = pd.DataFrame([{
-            'id': len(st.session_state.vendas) + 1,
-            'data': data,
-            'produto': produto,
-            'quantidade': quantidade,
-            'preco_unitario': preco_unitario,
-            'valor_total': valor_total,
-            'forma_pagamento': forma_pagamento,
-            'observacao': observacao,
-            'created_at': datetime.now()
-        }])
-        st.session_state.vendas = pd.concat([st.session_state.vendas, nova_venda], ignore_index=True)
+        """Adiciona uma nova venda ao banco de dados"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO vendas (data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao))
+        
+        conn.commit()
+        conn.close()
 
     def editar_compra(self, id, data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista):
         """Edita uma compra existente"""
-        idx = st.session_state.compras.index[st.session_state.compras['id'] == id].tolist()[0]
-        st.session_state.compras.at[idx, 'data'] = data
-        st.session_state.compras.at[idx, 'produto'] = produto
-        st.session_state.compras.at[idx, 'quantidade'] = quantidade
-        st.session_state.compras.at[idx, 'valor_unitario'] = valor_unitario
-        st.session_state.compras.at[idx, 'valor_total'] = valor_total
-        st.session_state.compras.at[idx, 'observacao'] = observacao
-        st.session_state.compras.at[idx, 'compra_mista'] = compra_mista
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE compras 
+            SET data = ?, produto = ?, quantidade = ?, valor_unitario = ?, 
+                valor_total = ?, observacao = ?, compra_mista = ?
+            WHERE id = ?
+        ''', (data, produto, quantidade, valor_unitario, valor_total, observacao, compra_mista, id))
+        
+        conn.commit()
+        conn.close()
 
     def editar_venda(self, id, data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao):
         """Edita uma venda existente"""
-        idx = st.session_state.vendas.index[st.session_state.vendas['id'] == id].tolist()[0]
-        st.session_state.vendas.at[idx, 'data'] = data
-        st.session_state.vendas.at[idx, 'produto'] = produto
-        st.session_state.vendas.at[idx, 'quantidade'] = quantidade
-        st.session_state.vendas.at[idx, 'preco_unitario'] = preco_unitario
-        st.session_state.vendas.at[idx, 'valor_total'] = valor_total
-        st.session_state.vendas.at[idx, 'forma_pagamento'] = forma_pagamento
-        st.session_state.vendas.at[idx, 'observacao'] = observacao
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE vendas 
+            SET data = ?, produto = ?, quantidade = ?, preco_unitario = ?, 
+                valor_total = ?, forma_pagamento = ?, observacao = ?
+            WHERE id = ?
+        ''', (data, produto, quantidade, preco_unitario, valor_total, forma_pagamento, observacao, id))
+        
+        conn.commit()
+        conn.close()
 
     def obter_compra_por_id(self, id):
         """Obtém uma compra pelo ID"""
-        return st.session_state.compras[st.session_state.compras['id'] == id].iloc[0]
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM compras WHERE id = ?', (id,))
+        columns = [description[0] for description in cursor.description]
+        row = cursor.fetchone()
+        
+        conn.close()
+        
+        if row:
+            return dict(zip(columns, row))
+        return None
 
     def obter_venda_por_id(self, id):
         """Obtém uma venda pelo ID"""
-        return st.session_state.vendas[st.session_state.vendas['id'] == id].iloc[0]
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM vendas WHERE id = ?', (id,))
+        columns = [description[0] for description in cursor.description]
+        row = cursor.fetchone()
+        
+        conn.close()
+        
+        if row:
+            return dict(zip(columns, row))
+        return None
 
     def obter_total_mes(self, tabela, mes=None, ano=None):
         """Obtém o total de compras ou vendas do mês especificado"""
@@ -84,42 +142,62 @@ class Database:
         if ano is None:
             ano = datetime.now().year
 
-        df = st.session_state[tabela]
-        if not df.empty:
-            df['data'] = pd.to_datetime(df['data'])
-            mask = (df['data'].dt.month == mes) & (df['data'].dt.year == ano)
-            return df[mask]['valor_total'].sum()
-        return 0
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        query = f'''
+            SELECT SUM(valor_total) 
+            FROM {tabela} 
+            WHERE strftime('%m', data) = ? 
+            AND strftime('%Y', data) = ?
+        '''
+        
+        cursor.execute(query, (f"{mes:02d}", str(ano)))
+        total = cursor.fetchone()[0] or 0
+        
+        conn.close()
+        return total
 
     def obter_ultimos_registros(self, tabela, limite=5):
         """Obtém os últimos registros de uma tabela específica"""
-        df = st.session_state[tabela]
-        if not df.empty:
-            return df.sort_values('created_at', ascending=False).head(limite)
-        return pd.DataFrame()
+        conn = self.get_connection()
+        query = f"SELECT * FROM {tabela} ORDER BY data DESC LIMIT {limite}"
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        return df
 
     def exportar_relatorio_mensal(self, mes, ano, formato='csv'):
         """Exporta relatório mensal em CSV ou Excel"""
-        # Filtra os dados do mês
-        df_compras = st.session_state.compras
-        df_vendas = st.session_state.vendas
-
-        if not df_compras.empty:
-            df_compras['data'] = pd.to_datetime(df_compras['data'])
-            mask = (df_compras['data'].dt.month == mes) & (df_compras['data'].dt.year == ano)
-            df_compras = df_compras[mask]
-
-        if not df_vendas.empty:
-            df_vendas['data'] = pd.to_datetime(df_vendas['data'])
-            mask = (df_vendas['data'].dt.month == mes) & (df_vendas['data'].dt.year == ano)
-            df_vendas = df_vendas[mask]
-
-        # Prepara os arquivos para download
+        conn = self.get_connection()
+        
+        # Obtém dados do mês especificado
+        compras_query = f"""
+            SELECT * FROM compras 
+            WHERE strftime('%m', data) = '{mes:02d}'
+            AND strftime('%Y', data) = '{ano}'
+        """
+        
+        vendas_query = f"""
+            SELECT * FROM vendas 
+            WHERE strftime('%m', data) = '{mes:02d}'
+            AND strftime('%Y', data) = '{ano}'
+        """
+        
+        df_compras = pd.read_sql_query(compras_query, conn)
+        df_vendas = pd.read_sql_query(vendas_query, conn)
+        
+        conn.close()
+        
+        # Cria nome dos arquivos
+        compras_file = f'relatorio_compras_{ano}_{mes:02d}.{formato}'
+        vendas_file = f'relatorio_vendas_{ano}_{mes:02d}.{formato}'
+        
+        # Exporta os arquivos
         if formato == 'csv':
-            compras_file = df_compras.to_csv(index=False).encode('utf-8')
-            vendas_file = df_vendas.to_csv(index=False).encode('utf-8')
+            df_compras.to_csv(compras_file, index=False)
+            df_vendas.to_csv(vendas_file, index=False)
         else:  # excel
-            compras_file = df_compras.to_excel(index=False)
-            vendas_file = df_vendas.to_excel(index=False)
-
+            df_compras.to_excel(compras_file, index=False)
+            df_vendas.to_excel(vendas_file, index=False)
+        
         return compras_file, vendas_file 

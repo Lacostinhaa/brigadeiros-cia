@@ -264,7 +264,7 @@ with st.sidebar:
 
 # Função para formatar valores monetários
 def formatar_moeda(value):
-    return f"R$ {value:,.2f}"
+    return f"CLP {value:,.0f}"
 
 # Título principal com estilo personalizado
 st.markdown('<h1 class="main-title">🧁 Brigadeiros & Cia</h1>', unsafe_allow_html=True)
@@ -293,31 +293,48 @@ with tab1:
     with col3:
         st.metric("📈 Lucro Estimado", formatar_moeda(lucro))
     
-    # Últimas transações em cards
-    st.markdown("<br>", unsafe_allow_html=True)
+    # Últimas transações
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown('<h3 class="subtitle" style="font-size: 1.5rem;">📋 Últimas Compras</h3>', unsafe_allow_html=True)
+        st.subheader("Últimas Compras")
         ultimas_compras = db.obter_ultimos_registros('compras')
         if not ultimas_compras.empty:
-            # Adiciona coluna de ações
-            ultimas_compras['ações'] = ultimas_compras.apply(
-                lambda x: st.button('✏️ Editar', key=f'edit_compra_{x.id}', on_click=lambda id=x.id: setattr(st.session_state, 'editando_compra', id)),
-                axis=1
-            )
-            st.dataframe(ultimas_compras[['data', 'produto', 'quantidade', 'valor_total', 'ações']])
+            for idx, compra in ultimas_compras.iterrows():
+                with st.container():
+                    col_data, col_prod, col_qtd, col_valor, col_edit = st.columns([2, 2, 1, 2, 1])
+                    with col_data:
+                        st.write(compra['data'])
+                    with col_prod:
+                        st.write(compra['produto'])
+                    with col_qtd:
+                        st.write(compra['quantidade'])
+                    with col_valor:
+                        st.write(formatar_moeda(compra['valor_total']))
+                    with col_edit:
+                        if st.button('✏️', key=f'edit_compra_{compra["id"]}'):
+                            st.session_state.editando_compra = compra['id']
+                            st.rerun()
     
     with col2:
-        st.markdown('<h3 class="subtitle" style="font-size: 1.5rem;">📋 Últimas Vendas</h3>', unsafe_allow_html=True)
+        st.subheader("Últimas Vendas")
         ultimas_vendas = db.obter_ultimos_registros('vendas')
         if not ultimas_vendas.empty:
-            # Adiciona coluna de ações
-            ultimas_vendas['ações'] = ultimas_vendas.apply(
-                lambda x: st.button('✏️ Editar', key=f'edit_venda_{x.id}', on_click=lambda id=x.id: setattr(st.session_state, 'editando_venda', id)),
-                axis=1
-            )
-            st.dataframe(ultimas_vendas[['data', 'produto', 'quantidade', 'valor_total', 'ações']])
+            for idx, venda in ultimas_vendas.iterrows():
+                with st.container():
+                    col_data, col_prod, col_qtd, col_valor, col_edit = st.columns([2, 2, 1, 2, 1])
+                    with col_data:
+                        st.write(venda['data'])
+                    with col_prod:
+                        st.write(venda['produto'])
+                    with col_qtd:
+                        st.write(venda['quantidade'])
+                    with col_valor:
+                        st.write(formatar_moeda(venda['valor_total']))
+                    with col_edit:
+                        if st.button('✏️', key=f'edit_venda_{venda["id"]}'):
+                            st.session_state.editando_venda = venda['id']
+                            st.rerun()
 
 # Aba Compras
 with tab2:
